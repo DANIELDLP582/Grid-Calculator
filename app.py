@@ -30,6 +30,9 @@ def rotate_panel(panel):
     return Panel(panel.name, panel.width, panel.height, panel.power, panel.cut_height, panel.cut_length)
 
 def fit_layout(box_w, box_h, panels, orientation, psu_wattage=None, psu_max_load=0.8, is_gridflex=False):
+    if box_w > 10000 or box_h > 10000:
+        raise ValueError("Dimensions too large (max 10000 mm)")
+    
     if orientation == "Landscape":
         for key in panels:
             panels[key] = rotate_panel(panels[key])
@@ -39,6 +42,8 @@ def fit_layout(box_w, box_h, panels, orientation, psu_wattage=None, psu_max_load
     if is_gridflex:
         panel = list(panels.values())[0]
         panel_count = 0
+        full_grid_count = 0
+        cut_grid_count = 0
         total_power = 0
         
         count_cols = int(box_w // panel.width)
@@ -52,6 +57,7 @@ def fit_layout(box_w, box_h, panels, orientation, psu_wattage=None, psu_max_load
                 y = row * panel.height
                 layout.append((x, y, panel, panel.width, panel.height))
                 panel_count += 1
+                full_grid_count += 1
                 total_power += panel.power
         
         remaining_w = box_w - used_w
@@ -63,6 +69,7 @@ def fit_layout(box_w, box_h, panels, orientation, psu_wattage=None, psu_max_load
                 if y + panel.height <= box_h:
                     layout.append((x, y, panel, cut_width, panel.height))
                     panel_count += 1
+                    cut_grid_count += 1
                     total_power += panel.power * (cut_width / panel.width) * (panel.height / panel.height)
         
         remaining_h = box_h - used_h
@@ -74,6 +81,7 @@ def fit_layout(box_w, box_h, panels, orientation, psu_wattage=None, psu_max_load
                 if x + panel.width <= box_w:
                     layout.append((x, y, panel, panel.width, cut_height))
                     panel_count += 1
+                    cut_grid_count += 1
                     total_power += panel.power * (panel.width / panel.width) * (cut_height / panel.height)
         
         if remaining_w >= panel.cut_length and remaining_h >= panel.cut_height:
@@ -81,6 +89,7 @@ def fit_layout(box_w, box_h, panels, orientation, psu_wattage=None, psu_max_load
             y = used_h
             layout.append((x, y, panel, cut_width, cut_height))
             panel_count += 1
+            cut_grid_count += 1
             total_power += panel.power * (cut_width / panel.width) * (cut_height / panel.height)
         
         total_width_used = used_w + (cut_width if remaining_w >= panel.cut_length else 0)
@@ -92,7 +101,11 @@ def fit_layout(box_w, box_h, panels, orientation, psu_wattage=None, psu_max_load
         leftover_top = vertical_leftover / 2
         leftover_bottom = vertical_leftover / 2
         
-        counts = {panel.name: panel_count}
+        counts = {
+            "Total GridFlex": panel_count,
+            "Full Grid": full_grid_count,
+            "Cut Grid": cut_grid_count
+        }
     else:
         A = panels["A"]
         B = panels["B"]
@@ -262,54 +275,33 @@ def fit_layout(box_w, box_h, panels, orientation, psu_wattage=None, psu_max_load
         "psu_wattage": psu_wattage,
     }
 
-def format_data_text(res, label, is_gridflex=False):
+def format_data_text(res, is_gridflex=False):
     c = res["boards"]
     leftover_left = res["leftover_left"]
     leftover_right = res["leftover_right"]
     leftover_top = res["leftover_top"]
     leftover_bottom = res["leftover_bottom"]
     psu_count = res["psu_count"]
-    psu_assignments = res["psu_assignments"]
-    psu_powers = [0] * psu_count if psu_assignments else []
     
-    if psu_assignments:
-        for _, _, panel, w, h, psu_idx in psu_assignments:
-            psu_powers[psu_idx] += panel.power * (w / panel.width) * (h / panel.height)
-    
-    txt = f"{label:<15}\n"
-    txt += f"{'Panels used:':<15}\n"
+    txt = ""
     if is_gridflex:
-        panel_name = list(c.keys())[0]
-        txt += f" {panel_name}: {c[panel_name]:<3}"
-        if psu_count > 0:
-            txt += f" PSU1: {math.ceil(psu_powers[0])}W"
-        txt += "\n"
+        txt += f"Total GridFlex: {c['Total GridFlex']}\n"
+        txt += f"Full Grid: {c['Full Grid']}\n"
+        txt += f"Cut Grid: {c['Cut Grid']}\n"
     else:
-        txt += f" A: {c['A']:<3} B: {c['B']:<3}"
-        if psu_count > 0:
-            txt += f" PSU1: {math.ceil(psu_powers[0])}W"
-        txt += "\n"
-        txt += f" C: {c['C']:<3} D: {c['D']:<3}"
-        if psu_count > 1:
-            txt += f" PSU2: {math.ceil(psu_powers[1])}W"
-        txt += "\n"
+        txt += f"Panels Used:\n"
+        txt += f"A: {c['A']}\n"
+        txt += f"B: {c['B']}\n"
+        txt += f"C: {c['C']}\n"
+        txt += f"D: {c['D']}\n"
     
-    txt += f"Total Power: {res['total_power']:.1f}W"
-    if psu_count > 2:
-        txt += f" PSU3: {math.ceil(psu_powers[2])}W"
-    txt += "\n"
-    
-    for i in range(3, min(psu_count, 10)):
-        txt += f"{'':<24}PSU{i+1}: {math.ceil(psu_powers[i])}W\n"
-    
+    txt += f"Total Power: {res['total_power']:.1f}W\n"
     txt += f"PSUs Needed: {psu_count}\n"
-    if res["psu_wattage"] is not None:
-        txt += f"PSU Wattage: {res['psu_wattage']}W\n"
-    txt += f"Leftover margins (mm):\n"
-    txt += f" Left: {leftover_left:.1f}\n"
-    txt += f" Right: {leftover_right:.1f}\n"
-    txt += f" Top: {leftover_top:.1f}\n"
-    txt += f" Bottom: {leftover_bottom:.1f}"
+    txt += f"Left Over Margins:\n"
+    txt += f"Left: {leftover_left:.1f}\n"
+    txt += f"Right: {leftover_right:.1f}\n"
+    txt += f"Top: {leftover_top:.1f}\n"
+    txt += f"Bottom: {leftover_bottom:.1f}\n"
     
     return txt
 
@@ -327,7 +319,6 @@ def generate_plot_data(box_w, box_h, layout, leftovers, orientation, psu_assignm
     
     shapes = []
     annotations = []
-    # Outer rectangle
     shapes.append({
         "type": "rect",
         "x0": 0,
@@ -338,7 +329,6 @@ def generate_plot_data(box_w, box_h, layout, leftovers, orientation, psu_assignm
         "fillcolor": "rgba(0,0,0,0)"
     })
     
-    # Leftover margins
     if leftovers["leftover_left"] > 0:
         shapes.append({
             "type": "rect",
@@ -380,7 +370,6 @@ def generate_plot_data(box_w, box_h, layout, leftovers, orientation, psu_assignm
             "line": {"width": 0}
         })
     
-    # Panels
     for x, y, p, w, h, *extra in (psu_assignments if psu_assignments else [(x, y, p, w, h) for x, y, p, w, h in layout]):
         psu_idx = extra[0] if psu_assignments else None
         color = colors[p.name] if psu_idx is None else psu_colors[psu_idx % len(psu_colors)]
@@ -451,7 +440,7 @@ def generate_plot_data(box_w, box_h, layout, leftovers, orientation, psu_assignm
         "annotations": annotations,
         "xaxis": {"range": [0, box_w], "title": "Width (mm)"},
         "yaxis": {"range": [0, box_h], "title": "Height (mm)", "scaleanchor": "x", "scaleratio": 1},
-        "title": f"Panel Layout ({orientation})",
+        "title": "Panel Layout",
         "showlegend": False,
         "margin": {"l": 50, "r": 50, "t": 50, "b": 50}
     }
@@ -497,32 +486,22 @@ def calculate():
                 panels["C"] = Panel("C", 52, 300, 1.3)
                 panels["D"] = Panel("D", 52, 60, 0.32)
         
-        # Portrait layout
-        res1 = fit_layout(box_w, box_h, panels.copy(), "Portrait", psu_wattage, psu_max_load, is_gridflex)
-        result_text1 = format_data_text(res1, "Layout 1", is_gridflex)
-        plot_data1 = generate_plot_data(box_w, box_h, res1["layout"], {
-            "leftover_left": res1["leftover_left"],
-            "leftover_right": res1["leftover_right"],
-            "leftover_top": res1["leftover_top"],
-            "leftover_bottom": res1["leftover_bottom"]
-        }, "Portrait", res1["psu_assignments"], is_gridflex)
-        
-        # Landscape layout (swapped dimensions)
-        res2 = fit_layout(box_h, box_w, panels.copy(), "Portrait", psu_wattage, psu_max_load, is_gridflex)
-        result_text2 = format_data_text(res2, "Layout 2", is_gridflex)
-        plot_data2 = generate_plot_data(box_h, box_w, res2["layout"], {
-            "leftover_left": res2["leftover_left"],
-            "leftover_right": res2["leftover_right"],
-            "leftover_top": res2["leftover_top"],
-            "leftover_bottom": res2["leftover_bottom"]
-        }, "Portrait", res2["psu_assignments"], is_gridflex)
+        res = fit_layout(box_w, box_h, panels.copy(), "Portrait", psu_wattage, psu_max_load, is_gridflex)
+        result_text = format_data_text(res, is_gridflex)
+        plot_data = generate_plot_data(box_w, box_h, res["layout"], {
+            "leftover_left": res["leftover_left"],
+            "leftover_right": res["leftover_right"],
+            "leftover_top": res["leftover_top"],
+            "leftover_bottom": res["leftover_bottom"]
+        }, "Portrait", res["psu_assignments"], is_gridflex)
         
         return jsonify({
-            "layout1": {"text": result_text1, "plot": plot_data1},
-            "layout2": {"text": result_text2, "plot": plot_data2}
+            "layout1": {"text": result_text, "plot": plot_data}
         })
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
