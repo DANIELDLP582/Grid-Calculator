@@ -298,10 +298,10 @@ def format_data_text(res, is_gridflex=False):
     txt += f"Total Power: {res['total_power']:.1f}W\n"
     txt += f"PSUs Needed: {psu_count}\n"
     txt += f"Left Over Margins:\n"
-    txt += f"Left: {leftover_left:.1f}\n"
-    txt += f"Right: {leftover_right:.1f}\n"
-    txt += f"Top: {leftover_top:.1f}\n"
-    txt += f"Bottom: {leftover_bottom:.1f}\n"
+    txt += f"Left Margin: {leftover_left:.1f}\n"
+    txt += f"Right Margin: {leftover_right:.1f}\n"
+    txt += f"Top Margin: {leftover_top:.1f}\n"
+    txt += f"Bottom Margin: {leftover_bottom:.1f}\n"
     
     return txt
 
