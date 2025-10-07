@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grid & GridFlex Calculator</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
     body {
-        font-family: Arial, sans-serif;
+        font-family: 'Montserrat', sans-serif;
         max-width: 1200px;
         margin: 0 auto;
         padding: 20px;
@@ -39,16 +40,19 @@
         margin-top: 0;
         font-size: 1.5em;
         color: #2c3e50;
+        font-family: 'Montserrat', sans-serif;
     }
     form label {
         display: inline-block;
         width: 120px;
         margin: 5px 0;
+        font-family: 'Montserrat', sans-serif;
     }
     form input, form select {
         padding: 5px;
         margin: 5px 0;
         width: 150px;
+        font-family: 'Montserrat', sans-serif;
     }
     form button {
         background-color: #4CAF50;
@@ -58,6 +62,7 @@
         border-radius: 5px;
         cursor: pointer;
         font-weight: bold;
+        font-family: 'Montserrat', sans-serif;
     }
     .result-table {
         width: 100%;
@@ -71,7 +76,7 @@
         border: 1px solid #ccc;
         padding: 8px;
         text-align: left;
-        font-family: 'Courier New', Courier, monospace;
+        font-family: 'Montserrat', sans-serif;
     }
     .result-table th {
         background-color: #e0e0e0;
@@ -92,6 +97,12 @@
         max-width: 200px;
         height: auto;
     }
+    .description {
+        font-size: 0.9em;
+        color: #2c3e50;
+        margin-bottom: 10px;
+        font-family: 'Montserrat', sans-serif;
+    }
     @media (max-width: 768px) {
         .container {
             flex-direction: column;
@@ -110,23 +121,32 @@
 </head>
 <body>
     <img src="/static/logo.png" alt="Company Logo" class="logo">
-    <h1 style="text-align: center; color: #2c3e50;">Grid & GridFlex Calculator</h1>
+    <h1 style="text-align: center; color: #2c3e50; font-family: 'Montserrat', sans-serif;">Grid & GridFlex Calculator</h1>
     <div class="container">
         <div class="input-section">
             <h2>Input Parameters</h2>
             <form id="calcForm">
+                <div class="description">
+                    <strong>Dimensions:</strong><br>
+                    Enter the internal dimensions of the light box to be illuminated. You can swap the width and height values to test which panel orientation fits best within the box.
+                </div>
                 <label for="box_w">Box Width (mm):</label>
                 <input type="number" id="box_w" name="box_w" step="any" required><br>
                 <label for="box_h">Box Height (mm):</label>
                 <input type="number" id="box_h" name="box_h" step="any" required><br>
+                <div class="description">
+                    <strong>Power Supply:</strong><br>
+                    Specify the power output of the PSU being used. We recommend loading it to a maximum of 80% of its total capacity.<br>
+                    If more than one PSU is required, the PANEL LAYOUT will show which LEDs should connect to each power supply using different colours.<br>
+                    For FLEXIGRID, a lighter shade of the colour will appear where a panel needs to be cut.
+                </div>
                 <label for="psu_wattage">PSU Wattage (W):</label>
                 <input type="number" id="psu_wattage" name="psu_wattage" step="any"><br>
                 <label for="psu_max_load">PSU Max Load (%):</label>
                 <input type="number" id="psu_max_load" name="psu_max_load" value="80" step="any"><br>
                 <label for="panel_type">Panel Type:</label>
                 <select id="panel_type" name="panel_type">
-                    <option value="Grid v5">Grid v5</option>
-                    <option value="GRID v4">Grid v4</option>
+                    <option value="Bright Green Grid" selected>Bright Green Grid</option>
                     <option value="GridFlex">GridFlex</option>
                     <option value="GridFlex DW">GridFlex DW</option>
                     <option value="GridFlex RGBW">GridFlex RGBW</option>

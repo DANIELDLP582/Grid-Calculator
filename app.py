@@ -14,8 +14,8 @@ class Panel:
         self.cut_height = cut_height
 
 PANELS = {
-    "A": Panel("A", 312, 300, 4.86),
-    "B": Panel("B", 312, 60, 1),
+    "A": Panel("A", 312, 300, 6.12),
+    "B": Panel("B", 312, 60, 1.13),
     "C": Panel("C", 52, 300, 1.3),
     "D": Panel("D", 52, 60, 0.32),
 }
@@ -396,7 +396,7 @@ def generate_plot_data(box_w, box_h, layout, leftovers, orientation, psu_assignm
                 "y": cy,
                 "text": p.name,
                 "showarrow": False,
-                "font": {"size": font_size, "color": "black"},
+                "font": {"size": font_size, "color": "black", "family": "Montserrat, sans-serif"},
                 "textangle": rotation
             })
         
@@ -480,7 +480,7 @@ def calculate():
             panels = {config: GRIDFLEX_PANELS[config]}
         else:
             panels = PANELS.copy()
-            if config == "GRID v4":
+            if config == "Bright Green Grid":
                 panels["A"] = Panel("A", 312, 300, 6.12)
                 panels["B"] = Panel("B", 312, 60, 1.13)
                 panels["C"] = Panel("C", 52, 300, 1.3)
